@@ -28,9 +28,9 @@ app.post('/create_preference', async (req, res) => {
         },
       ],
       back_urls: {
-        success: 'http://localhost:5173/success',
-        failure: 'http://localhost:5173/failure',
-        pending: 'http://localhost:5173/pending',
+        success: 'http://ebookstoreoficial.netlify.app/success',
+        failure: 'http://ebookstoreoficial.netlify.app/failure',
+        pending: 'http://ebookstoreoficial.netlify.app/pending',
       },
       auto_return: 'approved',
     };
