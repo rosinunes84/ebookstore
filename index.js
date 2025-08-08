@@ -24,9 +24,9 @@ app.post("/create_preference", async (req, res) => {
         },
       ],
       back_urls: {
-        success: "https://seusite.com/sucesso",
-        failure: "https://seusite.com/falha",
-        pending: "https://seusite.com/pendente",
+        success: "https://ebookstoreoficial.netlify.app/sucesso",
+        failure: "https://ebookstoreoficial.netlify.app/falha",
+        pending: "https://ebookstoreoficial.netlify.app/pendente",
       },
       auto_return: "approved",
     };
