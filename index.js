@@ -1,43 +1,46 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import mercadopago from 'mercadopago';
-
-dotenv.config();
+import express from "express";
+import cors from "cors";
+import { MercadoPagoConfig, Preference } from "mercadopago";
 
 const app = express();
-const PORT = process.env.PORT || 4000;
-
 app.use(cors());
 app.use(express.json());
 
-// ✅ Configuração correta do Mercado Pago com a nova versão:
-mercadopago.configure({
-  access_token: process.env.MP_ACCESS_TOKEN,
+// Configuração do Mercado Pago
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN, // Defina no Render
 });
 
-app.post('/create_preference', async (req, res) => {
+// Criar preferência
+app.post("/create_preference", async (req, res) => {
   try {
-    const { items } = req.body;
-
-    const preference = {
-      items,
+    const body = {
+      items: [
+        {
+          title: req.body.title,
+          quantity: Number(req.body.quantity),
+          currency_id: "BRL",
+          unit_price: Number(req.body.price),
+        },
+      ],
       back_urls: {
-        success: "http://localhost:5173/success",
-        failure: "http://localhost:5173/failure",
-        pending: "http://localhost:5173/pending"
+        success: "https://seusite.com/sucesso",
+        failure: "https://seusite.com/falha",
+        pending: "https://seusite.com/pendente",
       },
       auto_return: "approved",
     };
 
-    const response = await mercadopago.preferences.create(preference);
-    res.json({ init_point: response.body.init_point });
+    const preference = await new Preference(client).create({ body });
+
+    res.json({ id: preference.id });
   } catch (error) {
-    console.error("Erro ao criar preferência:", error);
-    res.status(500).json({ error: 'Erro ao criar preferência' });
+    console.error(error);
+    res.status(500).send("Erro ao criar preferência");
   }
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
