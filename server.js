@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Inicializa o cliente Mercado Pago com a nova sintaxe
-const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
+const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
 
 app.post('/create_preference', async (req, res) => {
   try {
