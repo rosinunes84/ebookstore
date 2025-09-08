@@ -1,8 +1,7 @@
-// server.js (ESM)
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { MercadoPagoConfig } from 'mercadopago';
+import mercadopago from 'mercadopago';
 
 dotenv.config();
 
@@ -12,35 +11,64 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// Inicializa o cliente Mercado Pago com a nova sintaxe
-const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+// Configura Mercado Pago com o access token do .env
+if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
+  console.error('⚠️ MERCADO_PAGO_ACCESS_TOKEN não está definido no .env!');
+  process.exit(1);
+}
+mercadopago.configurations.setAccessToken(process.env.MERCADO_PAGO_ACCESS_TOKEN);
 
 app.post('/create_preference', async (req, res) => {
   try {
-    const { title, quantity, price } = req.body;
+    const { items } = req.body;
+
+    // Validação simples dos itens
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Items inválidos ou ausentes' });
+    }
+
+    // Valida cada item
+    for (const item of items) {
+      if (
+        !item.title ||
+        typeof item.title !== 'string' ||
+        !item.quantity ||
+        isNaN(Number(item.quantity)) ||
+        !item.unit_price ||
+        isNaN(Number(item.unit_price))
+      ) {
+        return res.status(400).json({ error: 'Item com dados inválidos' });
+      }
+    }
 
     const preference = {
-      items: [
-        {
-          title,
-          quantity: Number(quantity),
-          unit_price: Number(price),
-        },
-      ],
+      items: items.map(item => ({
+        title: item.title,
+        quantity: Number(item.quantity),
+        unit_price: Number(item.unit_price),
+        currency_id: 'BRL',
+      })),
       back_urls: {
-        success: 'http://ebookstoreoficial.netlify.app/success',
-        failure: 'http://ebookstoreoficial.netlify.app/failure',
-        pending: 'http://ebookstoreoficial.netlify.app/pending',
+        success: 'https://ebookstoreoficial.netlify.app/success',
+        failure: 'https://ebookstoreoficial.netlify.app/failure',
+        pending: 'https://ebookstoreoficial.netlify.app/pending',
       },
-      auto_return: 'approved',
+      auto_return: 'approved', // redireciona automaticamente se aprovado
+      notification_url: process.env.MERCADO_PAGO_NOTIFICATION_URL || '', // opcional para webhook
+      payment_methods: {
+        excluded_payment_types: [{ id: 'ticket' }], // opcional: excluir boleto, por exemplo
+      },
     };
 
-    const response = await client.preferences.create({ body: preference });
+    const response = await mercadopago.preferences.create(preference);
 
-    res.json({ id: response.id });
+    return res.json({
+      init_point: response.body.init_point,
+      id: response.body.id,
+    });
   } catch (error) {
-    console.error('Erro ao criar preferência:', error.message);
-    res.status(500).json({ error: 'Erro ao criar preferência' });
+    console.error('Erro ao criar preferência Mercado Pago:', error);
+    res.status(500).json({ error: 'Erro ao criar preferência Mercado Pago' });
   }
 });
 
